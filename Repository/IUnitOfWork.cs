@@ -12,9 +12,8 @@ namespace MovieAPI.Repository
         public IRepository<User> Users { get; }
         public IRepository<MoviesActors> MovieActors { get; }
         public IRepository<ActorAwards> ActorAwards { get; }
-
-
-
+        public IRepository<UserMovies> UserMovies { get; }
+        public RecommendationRepository Recommendation { get; }
         int SaveChanges();
     }
 }

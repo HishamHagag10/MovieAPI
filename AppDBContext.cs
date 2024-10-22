@@ -15,6 +15,7 @@ namespace MovieAPI
         public DbSet<Actor> Actors { get; set; }
         public DbSet<ActorAwards> ActorAwards { get; set; }
         public DbSet<MoviesActors> MoviesActors { get; set; }
+        public DbSet<UserMovies> UserMovies {  get; set; }
 
        // public DbSet<Role> Roles { get; set; }
         protected override void OnModelCreating(ModelBuilder modelBuilder)

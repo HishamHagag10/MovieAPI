@@ -17,23 +17,21 @@ namespace MovieAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-        public ActorController(IUnitOfWork unitOfWork, IMapper mapper)
+        private readonly PagenatedMapper _pagenatedmapper;
+        public ActorController(IUnitOfWork unitOfWork, IMapper mapper, PagenatedMapper pmapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _pagenatedmapper = pmapper;
         }
         [HttpGet("AllActors")]
         [AllowAnonymous]
         public async Task<IActionResult> GetActors([FromQuery] int PageIndex=1 ,[FromQuery] int PageSize=10)
         {
             var actors = await _unitOfWork.Actors.GetAllAsync(PageIndex,PageSize);
-            var response = new PagenatedResponse<ReturnActorDto>()
-            {
-                Data = _mapper.Map<IEnumerable<Actor>, IEnumerable<ReturnActorDto>>(actors.Data),
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                TotalPages=actors.TotalPages
-            };
+            
+            var response = _pagenatedmapper.Map<Actor, ReturnActorDto>(actors);
+            
             return Ok(response);
         }
 

@@ -11,7 +11,7 @@ namespace MovieAPI.Repository
 {
     public class BaseRepository<T> : IRepository<T> where T : class
     {
-        private readonly AppDBContext _context;
+        protected readonly AppDBContext _context;
 
         public BaseRepository(AppDBContext context)
         {

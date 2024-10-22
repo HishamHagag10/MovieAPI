@@ -17,7 +17,6 @@ namespace MovieAPI.Controllers
     [ApiController]
     public class UserController : ControllerBase
     {
-
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly JwtOptions _jwtOptions;
@@ -110,5 +109,6 @@ namespace MovieAPI.Controllers
             _unitOfWork.SaveChanges();
             return Ok("Updated Successfully");
         }
+
     }
 }

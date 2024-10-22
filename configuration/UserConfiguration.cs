@@ -9,8 +9,13 @@ namespace MovieAPI.configuration
         public void Configure(EntityTypeBuilder<User> builder)
         {
             builder.ToTable("Users");
+            builder.HasMany(x => x.WatchedMovies)
+                .WithMany(x => x.UsersWatched)
+                .UsingEntity<UserMovies>(
+                r => r.HasOne(x => x.Movie).WithMany().HasForeignKey(x => x.MovieId),
+                l => l.HasOne(x=>x.User).WithMany().HasForeignKey(x=>x.UserId)
+                ).HasKey(x=>x.Id);
 
-            //builder.HasKey(p => p.Id);
         }
     }
 }

@@ -12,7 +12,6 @@ namespace MovieAPI.Controllers
     [Route("api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin,User")]
-    // TODO : Update for authentication that user can only delete its review 
     public class ReviewController : ControllerBase
     {
         private readonly IUnitOfWork _unitOfWork;
@@ -28,7 +27,8 @@ namespace MovieAPI.Controllers
         {
             var review = await _unitOfWork.Reviews.FirstAsync(x=>x.Id==id,
                 x=>new ReturnReviewDto{
-                    Id=x.Id,Description = x.Description,Rate = x.Rate,
+                    Id=x.Id,Description = x.Description,
+                    Rate = x.Rate,
                     UserName=x.User.Name,
                     MovieTitle=x.Movie.Title
                 },
@@ -72,7 +72,8 @@ namespace MovieAPI.Controllers
         public async Task<IActionResult> UpdateReview(int id,UpdateReviewDto dto)
         {
             
-            var review = await _unitOfWork.Reviews.FirstAsync(x=>x.Id==id,new []{"Movie","User"});
+            var review = await _unitOfWork.Reviews.FirstAsync(x=>x.Id==id,
+                new []{"Movie","User"});
             if (review == null) return NotFound($"NO Review With Id = {id}");
             if (User.FindFirst(ClaimTypes.Role)?.Value == Role.User.ToString())
             {
@@ -94,7 +95,6 @@ namespace MovieAPI.Controllers
             return Ok(_mapper.Map<Review, ReturnReviewDto>(review));
         }
 
-        // TODO : try to optimize.
         [HttpDelete("DeleteReview/{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {

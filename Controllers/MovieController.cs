@@ -9,6 +9,7 @@ using MovieAPI.Dtos;
 using MovieAPI.Helper;
 using MovieAPI.models;
 using MovieAPI.Repository;
+using System.Security.Claims;
 using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace MovieAPI.Controllers
@@ -22,12 +23,14 @@ namespace MovieAPI.Controllers
         //private readonly IRepository<Genre> _unitOfWork.Genres;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
+        private readonly PagenatedMapper _pagenatedMapper;
         private readonly IOptions<AttachmentOption> _attachOptions;
-        public MovieController(IUnitOfWork unitOfWork, IMapper mapper,IOptions<AttachmentOption> attachOptions)
+        public MovieController(IUnitOfWork unitOfWork, IMapper mapper, IOptions<AttachmentOption> attachOptions, PagenatedMapper pagenatedMapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
             _attachOptions = attachOptions;
+            _pagenatedMapper = pagenatedMapper;
         }
 
         [HttpGet(template: "GetAllMovie")]
@@ -35,19 +38,14 @@ namespace MovieAPI.Controllers
         public async Task<IActionResult> GetAllMovieAsync([FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
         {
             var movies = await _unitOfWork.Movies.FindAsync(x=>true,PageIndex,PageSize,new[] { "Genre" });
-            var response =new PagenatedResponse<ReturnMovieDto>
-            {
-                Data = _mapper.Map<IEnumerable<Movie>, IEnumerable<ReturnMovieDto>>(movies.Data),
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                TotalPages= movies.TotalPages
-            };
+            var response =_pagenatedMapper.Map<Movie,ReturnMovieDto>(movies);
+            
             return Ok(response);
         }
 
         [HttpGet(template: "GetMovie/{id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetMovieAsync(int id)
+        public async Task<IActionResult> GetMovieById(int id)
         {
             var movie = await _unitOfWork.Movies.FirstAsync(x => x.Id == id, new[] { "Genre" });
             if (movie is null)
@@ -90,7 +88,8 @@ namespace MovieAPI.Controllers
             _unitOfWork.SaveChanges();
 
             var actors = dto.Actors
-                .Select(x=>new MoviesActors { ActorId=x.actorId,MovieId=movie.Id,Salary=x.Salary}); 
+                .Select(x=>new MoviesActors { ActorId=x.actorId,MovieId=movie.Id
+                ,Salary=x.Salary}); 
            
             await _unitOfWork.MovieActors.AddRangeAsync(actors);
 
@@ -145,10 +144,32 @@ namespace MovieAPI.Controllers
         {
             var movie = await _unitOfWork.Movies.FirstAsync(x => x.Id == id, new[] { "Genre" });
             if (movie is null)  
-                return NotFound($"No Movie With ID={id}");
+                return NotFound($"No Movie With Id={id}");
             _unitOfWork.Movies.Delete(movie);
             _unitOfWork.SaveChanges();
             return Ok(_mapper.Map<Movie, ReturnMovieDto>(movie));
+        }
+        [HttpPost("MovieWatched/{movieId}")]
+        public async Task<IActionResult> MovieWatched(int movieId)
+        {
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int userId))
+            {
+                return Unauthorized();
+            }
+            if (!(await _unitOfWork.Users.AnyAsync(x => x.Id == userId)))
+            {
+                return NotFound();
+            }
+            if (!(await _unitOfWork.Movies.AnyAsync(x => x.Id == movieId)))
+                return NotFound($"No Movie With Id={movieId}");
+            var userMovie = new UserMovies {
+                MovieId = movieId,
+                UserId = userId,
+                WatchedAt = DateTime.UtcNow
+            };
+            await _unitOfWork.UserMovies.AddAsync(userMovie);
+            _unitOfWork.SaveChanges();
+            return Ok();
         }
     }
 }

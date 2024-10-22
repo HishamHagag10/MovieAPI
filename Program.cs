@@ -50,6 +50,7 @@ namespace MovieAPI
             //builder.Services.AddTransient<IRepository<Genre>, BaseRepository<Genre>>();
             //builder.Services.AddTransient<IRepository<Movie>, BaseRepository<Movie>>();
             builder.Services.AddTransient<IUnitOfWork,UnitOfWork>();
+            builder.Services.AddScoped<PagenatedMapper>();
             builder.Services.AddAutoMapper(typeof(Program));
             
             

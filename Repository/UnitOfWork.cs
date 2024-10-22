@@ -17,12 +17,8 @@ namespace MovieAPI.Repository
             Awards = new BaseRepository<Award>(_context);
             MovieActors = new BaseRepository<MoviesActors>(_context);
             ActorAwards = new BaseRepository<ActorAwards>(_context);
-            /*if (!_context.Roles.Any())
-            {
-                _context.Roles.Add(new Role { Id = 1, Name = "Admin" });
-                _context.Roles.Add(new Role { Id = 2, Name = "User" });
-                _context.SaveChanges();
-            }*/
+            UserMovies = new BaseRepository<UserMovies>(_context);
+            Recommendation = new RecommendationRepository(_context);
         }
         public IRepository<Genre> Genres { get ; }
         public IRepository<Movie> Movies { get; }
@@ -35,6 +31,9 @@ namespace MovieAPI.Repository
 
         public IRepository<ActorAwards> ActorAwards { get; }
 
+        public IRepository<UserMovies> UserMovies { get; }
+
+        public RecommendationRepository Recommendation { get; }
         public void Dispose()
         {
             _context.Dispose();

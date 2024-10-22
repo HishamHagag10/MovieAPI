@@ -11,7 +11,6 @@ namespace MovieAPI.models
         public int NoOfReview {  get; set; }
         public double SumOfReview { get; set; }
 
-        //[DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         [NotMapped]
         public double Rate { 
             get {
@@ -22,7 +21,8 @@ namespace MovieAPI.models
         public byte[] Poster { get; set; }
         public int GenreId { get; set; }
         public Genre Genre { get; set; }
-        public ICollection<Review> Reviews { get; set; }
-        public ICollection<Actor> Actors { get;}
+        public IEnumerable<Review> Reviews { get; set; }
+        public IEnumerable<Actor> Actors { get; set; }
+        public IEnumerable<User> UsersWatched { get; set; }
     }
 }

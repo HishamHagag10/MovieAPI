@@ -17,72 +17,59 @@ namespace MovieAPI.Controllers
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
-
-        public SearchController(IUnitOfWork unitOfWork, IMapper mapper)
+        private readonly PagenatedMapper _pagenatedMapper;
+        public SearchController(IUnitOfWork unitOfWork, IMapper mapper, PagenatedMapper pagenatedMapper)
         {
             _unitOfWork = unitOfWork;
             _mapper = mapper;
+            _pagenatedMapper = pagenatedMapper;
         }
 
         [HttpGet(template: "MoviesOfGenre/{genreId}")]
         public async Task<IActionResult> GetMoviesByGenreAsync(int genreId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
         {
-            //var genre = await _unitOfWork.Genres.GetByIdAsync(genreId);
             if (!(await _unitOfWork.Genres.AnyAsync(x => x.Id == genreId)))
                 return NotFound($"No genre With ID ={genreId}");
 
             var movies = await _unitOfWork.Movies.FindAsync(x => x.GenreId == genreId,PageIndex,PageSize, new[] { "Genre" });
-            var response = new PagenatedResponse<ReturnMovieDto>
-            {
-                Data = _mapper.Map<IEnumerable<Movie>, IEnumerable<ReturnMovieDto>>(movies.Data),
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                TotalPages = movies.TotalPages
-            };
+            var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
+            
             return Ok(response);
         }
 
-        // TODO : Try to optimize this.
         [HttpGet("MoviesOfActor/{actorId}")]
         public async Task<IActionResult> GetMoviesByActor(int actorId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
         {
-            //var actor = await _unitOfWork.Actors.FirstAsync(x => x.Id == actorId,
-              //  x => new { x.Id, Movies = x.Movies.Select(x => x.Id) }, new[] { "Movies" });
             if (!(await _unitOfWork.Actors.AnyAsync(x=>x.Id==actorId)))
                 return NotFound($"NO Actor With id = {actorId}");
-            var response = await _unitOfWork.MovieActors.
-                FindAsync(x => x.ActorId == actorId,
-                x => new ReturnMovieDto
-                {
-                    Title = x.Movie.Title,
-                    year = x.Movie.year,
-                    Rate = x.Movie.Rate,
-                    StoreLine = x.Movie.StoreLine,
-                    GenreId = x.Movie.GenreId,
-                    GenreName = x.Movie.Genre.Name,
-                }
-                , PageIndex, PageSize, new[] { "Movie" });
 
-            /*var response = await _unitOfWork.Movies.FindAsync(x => x.Actors.Select(x => x.Id)
-            .Contains(actorId)
-                , x => new ReturnMovieDto {
-                    Title = x.Title,
-                    year = x.year,
-                    Rate = x.Rate,
-                    StoreLine=x.StoreLine,
-                    GenreId=x.GenreId,
-                    GenreName=x.Genre.Name,
-                },
-                PageIndex, PageSize, new[] { "Genre", "Actors" });
-            */
+            var movies = await _unitOfWork.MovieActors.
+                FindAsync(x => x.ActorId == actorId,
+                x=>x.Movie
+                ,PageIndex, PageSize, new[] { "Movie" });
+
+            var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
+
             return Ok(response);
         }
-
+        [HttpGet("GetMoviesByReleaseyear/{year}")]
+        public async Task<IActionResult> GetMoviesByReleaseyear(int year, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        {
+            if (year > DateTime.Now.Year + 5 || year<1900)
+            {
+                return BadRequest("Enter valid year");
+            }
+            var movies = await _unitOfWork.Movies.FindAsync(x => x.year == year, 
+                PageIndex, PageSize, new[] {"Genre"} );
+            var response = _pagenatedMapper.Map<Movie,ReturnMovieDto>(movies);
+            return Ok(response);
+        }
         [HttpGet("ReviewsOfMovie/{movieId}")]
         public async Task<IActionResult> GetReviewsOfMovie(int movieId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
         {
             if (!(await _unitOfWork.Movies.AnyAsync(x => x.Id == movieId)))
                 return NotFound($"NO Movie With this id = {movieId}");
+            
             var reviews = await _unitOfWork.Reviews.FindAsync(x => x.MovieId == movieId,
                 x => new ReturnReviewDto
                 {
@@ -157,6 +144,25 @@ namespace MovieAPI.Controllers
                 },PageIndex,PageSize, new[] {"User","Movie"} );
             return Ok(Reviews);
         }
+        [HttpGet("MoviesWatchedByUser")]
+        [Authorize(Roles ="Admin,User")]
+        public async Task<IActionResult> MoviesWatchedByUser([FromQuery] int PageIndex=1, [FromQuery] int PageSize = 10)
+        {
+            if(!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out int userId))
+            {
+                return Unauthorized();
+            }
+            var movies = await _unitOfWork.UserMovies
+                .FindAsync(x => x.UserId==userId,x=>x.Movie,
+                PageIndex,PageSize,
+                new[] { "Movie" } );
+
+            var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
+
+            
+            return Ok(response);
+        }
         // TODO : Search in all files and use select to optimize performance
+
     }
 }
