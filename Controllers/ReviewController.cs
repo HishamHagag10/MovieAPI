@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using MovieAPI.Dtos;
 using MovieAPI.models;
 using MovieAPI.Repository;
@@ -32,7 +33,7 @@ namespace MovieAPI.Controllers
                     UserName=x.User.Name,
                     MovieTitle=x.Movie.Title
                 },
-                new[] {"Movie","User"});
+                q=>q.Include(x=>x.Movie).Include(x=>x.User));
             if (review == null) 
             {
                 return NotFound($"NO Review With Id = {id}");
@@ -73,7 +74,7 @@ namespace MovieAPI.Controllers
         {
             
             var review = await _unitOfWork.Reviews.FirstAsync(x=>x.Id==id,
-                new []{"Movie","User"});
+                q=>q.Include(x=>x.Movie).Include(x=>x.User));
             if (review == null) return NotFound($"NO Review With Id = {id}");
             if (User.FindFirst(ClaimTypes.Role)?.Value == Role.User.ToString())
             {
@@ -98,7 +99,7 @@ namespace MovieAPI.Controllers
         [HttpDelete("DeleteReview/{id}")]
         public async Task<IActionResult> DeleteReview(int id)
         {
-            var review = await _unitOfWork.Reviews.FirstAsync(x => x.Id == id, new[] { "Movie", "User" });
+            var review = await _unitOfWork.Reviews.FirstAsync(x => x.Id == id,x=>x.Include(x=>x.Movie).Include(x=>x.User));//new[] { "Movie", "User" });
             if (review == null) return NotFound($"NO Review With Id = {id}");
             if (User.FindFirst(ClaimTypes.Role)?.Value == Role.User.ToString())
             {

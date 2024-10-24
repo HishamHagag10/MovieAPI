@@ -1,4 +1,5 @@
-﻿using MovieAPI.Helper;
+﻿using Microsoft.EntityFrameworkCore.Query;
+using MovieAPI.Helper;
 using MovieAPI.models;
 using System.Linq.Expressions;
 
@@ -8,16 +9,16 @@ namespace MovieAPI.Repository
     {
         Task<PagenatedResponse<T>> GetAllAsync(int pageIndex = 1, int pagesize = 10);
         Task<T?> GetByIdAsync(int? id);
-        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, string[]? includes = null);
-        Task<PagenatedResponse<T>> FindAsync(Expression<Func<T, bool>> criteria,int pageIndex=1,int pagesize = 10, string[]? includes=null);
-        Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, string[]? includes = null);
-        Task<PagenatedResponse<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, string[]? includes = null);
+        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria,int pageIndex=1,int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
 
         //        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> e, string[]? includes = null);
         //      Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> e, Expression<Func<T, T2>> s, string[]? includes = null);
 
-        Task<T?> FirstAsync(Expression<Func<T, bool>> criteria, string[]? includes=null);
-        Task<T2?> FirstAsync<T2>(Expression<Func<T2, bool>> criteria, Expression<Func<T, T2>> selector, string[]? includes = null);
+        Task<T?> FirstAsync(Expression<Func<T, bool>> criteria, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<T2?> FirstAsync<T2>(Expression<Func<T2, bool>> criteria, Expression<Func<T, T2>> selector, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
 
         Task<bool> AnyAsync(Expression<Func<T, bool>> criteria);
         Task<T> AddAsync(T item);

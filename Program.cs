@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.IdentityModel.Tokens;
 using MovieAPI.Authentication;
 using MovieAPI.Helper;
+using MovieAPI.Meddlewares;
 using MovieAPI.models;
 using MovieAPI.Repository;
 using System.Text;
@@ -63,6 +64,7 @@ namespace MovieAPI
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
+            app.UseMiddleware<ExceptionMeddleware>();
 
             app.UseMiddleware<RateLimitingMiddleware>();
             

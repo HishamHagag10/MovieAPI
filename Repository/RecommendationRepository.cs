@@ -53,13 +53,13 @@ namespace MovieAPI.Repository
 
             var query = _context.MoviesActors
                 .Where(x => actors.Contains(x.ActorId))
-                .Where(x => !_context.UserMovies.Any(y => y.UserId == userId && y.MovieId == x.MovieId));
+                .Where(x => !_context.UserMovies.Any(y => y.UserId == userId 
+                && y.MovieId == x.MovieId));
             
-            var movies = await query.Select(x=>x.Movie)
+            var movies = await query.Include(x=>x.Movie).ThenInclude(x=>x.Genre).Select(x=>x.Movie)
                 .Skip(PageSize * (PageIndex - 1))
                 .Take(PageSize).ToListAsync();
-            var gernes = movies.Join(_context.Genres, x => x.GenreId, x => x.Id,(x,y)=> y).ToList();
-
+            
             var response = new PagenatedResponse<Movie>
             {
                 Data = movies,

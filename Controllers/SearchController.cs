@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using MovieAPI.Dtos;
 using MovieAPI.Helper;
@@ -31,22 +32,23 @@ namespace MovieAPI.Controllers
             if (!(await _unitOfWork.Genres.AnyAsync(x => x.Id == genreId)))
                 return NotFound($"No genre With ID ={genreId}");
 
-            var movies = await _unitOfWork.Movies.FindAsync(x => x.GenreId == genreId,PageIndex,PageSize, new[] { "Genre" });
+            var movies = await _unitOfWork.Movies.FindPagenatedAsync(x => x.GenreId == genreId,
+                PageIndex,PageSize, q=>q.Include(x=>x.Genre));
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
             
             return Ok(response);
         }
 
         [HttpGet("MoviesOfActor/{actorId}")]
-        public async Task<IActionResult> GetMoviesByActor(int actorId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetMoviesOfActor(int actorId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
         {
             if (!(await _unitOfWork.Actors.AnyAsync(x=>x.Id==actorId)))
                 return NotFound($"NO Actor With id = {actorId}");
 
             var movies = await _unitOfWork.MovieActors.
-                FindAsync(x => x.ActorId == actorId,
+                FindPagenatedAsync(x => x.ActorId == actorId,
                 x=>x.Movie
-                ,PageIndex, PageSize, new[] { "Movie" });
+                ,PageIndex, PageSize, q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre));
 
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
 
@@ -59,8 +61,8 @@ namespace MovieAPI.Controllers
             {
                 return BadRequest("Enter valid year");
             }
-            var movies = await _unitOfWork.Movies.FindAsync(x => x.year == year, 
-                PageIndex, PageSize, new[] {"Genre"} );
+            var movies = await _unitOfWork.Movies.FindPagenatedAsync(x => x.year == year, 
+                PageIndex, PageSize, q=>q.Include(x=>x.Genre));
             var response = _pagenatedMapper.Map<Movie,ReturnMovieDto>(movies);
             return Ok(response);
         }
@@ -70,7 +72,7 @@ namespace MovieAPI.Controllers
             if (!(await _unitOfWork.Movies.AnyAsync(x => x.Id == movieId)))
                 return NotFound($"NO Movie With this id = {movieId}");
             
-            var reviews = await _unitOfWork.Reviews.FindAsync(x => x.MovieId == movieId,
+            var reviews = await _unitOfWork.Reviews.FindPagenatedAsync(x => x.MovieId == movieId,
                 x => new ReturnReviewDto
                 {
                     Id = x.Id,
@@ -79,7 +81,7 @@ namespace MovieAPI.Controllers
                     UserName = x.User.Name,
                     MovieTitle = x.Movie.Title
                 },PageIndex,PageSize,
-                new[] { "Movie", "User" });
+                x=>x.Include(x=>x.Movie).Include(x=>x.User));
 
             return Ok(reviews);
         }
@@ -90,9 +92,9 @@ namespace MovieAPI.Controllers
             if (!(await _unitOfWork.Movies.AnyAsync(x => x.Id == movieId)))
                 return NotFound($"NO Movie With this id = {movieId}");
 
-            var actors = await _unitOfWork.MovieActors.FindAsync(x => x.MovieId == movieId,
+            var actors = await _unitOfWork.MovieActors.FindPagenatedAsync(x => x.MovieId == movieId,
                 x => new { x.ActorId, x.Actor.Name, x.Actor.Email, x.Salary }
-                ,PageIndex,PageSize,new[] { "Actor" });
+                ,PageIndex,PageSize,x=>x.Include(x=>x.Actor));
 
             return Ok(actors);
         }
@@ -105,10 +107,10 @@ namespace MovieAPI.Controllers
                 return NotFound($"NO Actor with id = {actorId}");
 
             var awards = await _unitOfWork.ActorAwards
-                .FindAsync(x => x.ActorId == actorId,
+                .FindPagenatedAsync(x => x.ActorId == actorId,
                 x => new { x.AwardId, Award = x.Award.Name, x.YearOfHonor },
                 PageIndex, PageSize,
-                new[] { "Award" });
+                q=>q.Include(x=>x.Award));
 
             return Ok(awards);
         }
@@ -120,10 +122,10 @@ namespace MovieAPI.Controllers
                 return NotFound($"NO Award With Id = {awardId}");
 
             var actors = await _unitOfWork.ActorAwards
-               .FindAsync(x => x.AwardId == awardId,
+               .FindPagenatedAsync(x => x.AwardId == awardId,
                x => new { x.ActorId, x.Actor.Name, x.YearOfHonor },
                PageIndex, PageSize,
-               new[] { "Actor" });
+               q=>q.Include(x=>x.Actor));
 
             return Ok(actors);
         }
@@ -133,7 +135,7 @@ namespace MovieAPI.Controllers
         {
             if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int userid))
                 return Unauthorized();
-            var Reviews = await _unitOfWork.Reviews.FindAsync(x => x.UserId == userid,
+            var Reviews = await _unitOfWork.Reviews.FindPagenatedAsync(x => x.UserId == userid,
                 x=>new ReturnReviewDto
                 {
                     Id= x.Id,
@@ -141,7 +143,7 @@ namespace MovieAPI.Controllers
                     UserName = x.User.Name,
                     MovieTitle=x.Movie.Title,
                     Rate=x.Rate
-                },PageIndex,PageSize, new[] {"User","Movie"} );
+                },PageIndex,PageSize, q=>q.Include(x=>x.Movie).Include(x=>x.User));
             return Ok(Reviews);
         }
         [HttpGet("MoviesWatchedByUser")]
@@ -153,12 +155,11 @@ namespace MovieAPI.Controllers
                 return Unauthorized();
             }
             var movies = await _unitOfWork.UserMovies
-                .FindAsync(x => x.UserId==userId,x=>x.Movie,
+                .FindPagenatedAsync(x => x.UserId==userId,x=>x.Movie,
                 PageIndex,PageSize,
-                new[] { "Movie" } );
+                q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre));
 
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
-
             
             return Ok(response);
         }

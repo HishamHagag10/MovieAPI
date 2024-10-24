@@ -26,7 +26,7 @@ namespace MovieAPI.configuration
                 l=>l.HasOne(x=>x.Award).WithMany().HasForeignKey(x=>x.AwardId),
                 r => r.HasOne(x => x.Actor).WithMany().HasForeignKey(x => x.ActorId)
                 )
-                .HasKey(x=>new {x.ActorId,x.AwardId});
+                .HasKey(x=>new {x.ActorId,x.AwardId,x.YearOfHonor});
 
         }
     }

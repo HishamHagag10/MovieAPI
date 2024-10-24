@@ -6,6 +6,7 @@ using MovieAPI.Helper;
 using System.Linq.Expressions;
 using System.Security.Cryptography.Xml;
 using EFCore.BulkExtensions;
+using Microsoft.EntityFrameworkCore.Query;
 
 namespace MovieAPI.Repository
 {
@@ -49,31 +50,28 @@ namespace MovieAPI.Repository
             return item;
         }
 
-        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, string[]? includes = null)
+        public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, Func<IQueryable<T>,IIncludableQueryable<T, object>>? includes = null)
         {
             var items = _context.Set<T>().Where(criteria);
             if (includes != null)
-                foreach (var include in includes)
-                    items = items.Include(include);
+                items = includes(items);
             return await items.ToListAsync();
         }
-        public async Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, string[]? includes = null)
+        public async Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
             var items = _context.Set<T>().Where(criteria);
             if (includes != null)
-                foreach (var include in includes)
-                    items = items.Include(include);
+                    items = includes(items);
             return await items.Select(selector).ToListAsync();
         }
 
-        public async Task<PagenatedResponse<T>> FindAsync(Expression<Func<T, bool>> criteria, int pageIndex = 1, int pagesize = 10, string[]? includes = null)
+        public async Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
             var items = _context.Set<T>().Where(criteria);
             var count = ((await items.CountAsync()) + pagesize - 1) / pagesize;
             items=items.Skip(pagesize * (pageIndex - 1)).Take(pagesize);
             if (includes != null)
-                foreach (var include in includes)
-                    items = items.Include(include);
+                    items = includes(items);
             return new PagenatedResponse<T>
             {
                 Data = await items.ToListAsync(),
@@ -83,14 +81,13 @@ namespace MovieAPI.Repository
             };
         }
 
-        public async Task<PagenatedResponse<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, string[]? includes = null)
+        public async Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
             var items = _context.Set<T>().Where(criteria);
             var count = ((await items.CountAsync()) + pagesize - 1) / pagesize;
             items=items.Skip(pagesize * (pageIndex - 1)).Take(pagesize);
             if (includes != null)
-                foreach (var include in includes)
-                    items = items.Include(include);
+                    items = includes(items);
             await items.Select(selector).ToListAsync();
             return new PagenatedResponse<T2>
             {
@@ -105,30 +102,21 @@ namespace MovieAPI.Repository
             if (id == null) return null;
             return await _context.Set<T>().FindAsync(id);
         }
-        public async Task<T?> FirstAsync(Expression<Func<T, bool>> e, string[]? includes=null)
+        public async Task<T?> FirstAsync(Expression<Func<T, bool>> e, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
-            /*var item = await _context.Set<T>().SingleOrDefaultAsync(e);
-            if (item == null) return item;
-            foreach (var inc in includes)
-            {
-                _context.Entry(item).Reference(inc).Load();
-            }
-            return item;*/
             IQueryable<T> items =  _context.Set<T>();
             if (includes != null)
             {
-                foreach (var inc in includes)
-                    items = items.Include(inc);
+                    items = includes(items);
             }
             return await items.FirstOrDefaultAsync(e);
         }
-        public async Task<T2?> FirstAsync<T2>(Expression<Func<T2, bool>> e, Expression<Func<T, T2>> s,string[]? includes = null)
+        public async Task<T2?> FirstAsync<T2>(Expression<Func<T2, bool>> e, Expression<Func<T, T2>> s, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
             IQueryable<T> items = _context.Set<T>();
             if (includes != null)
             {
-                foreach (var inc in includes)
-                    items = items.Include(inc);
+                    items = includes(items);
             }
             return await items.Select(s).FirstOrDefaultAsync(e);
         }

@@ -1,14 +1,14 @@
-﻿namespace MovieAPI.Helper
+﻿namespace MovieAPI.Meddlewares
 {
     public class RateLimitingMiddleware
     {
         private RequestDelegate next;
         public RateLimitingMiddleware(RequestDelegate next)
         {
-            this.next=next;
+            this.next = next;
         }
         private static int _counter = 0;
-        private static DateTime _lastRequestTime=DateTime.Now;
+        private static DateTime _lastRequestTime = DateTime.Now;
         public async Task Invoke(HttpContext context)
         {
             _counter++;
@@ -21,7 +21,7 @@
             }
             if (_counter < 100)
             {
-                _lastRequestTime=DateTime.Now;
+                _lastRequestTime = DateTime.Now;
                 await next(context);
                 return;
             }
