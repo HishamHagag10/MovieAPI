@@ -22,7 +22,7 @@ namespace MovieAPI.Repository
         {
             return new PagenatedResponse<T>
             {
-                Data = await _context.Set<T>().Skip(pagesize*(pageIndex-1)).Take(pagesize).ToListAsync(),
+                Data = await _context.Set<T>().AsNoTracking().Skip(pagesize*(pageIndex-1)).Take(pagesize).ToListAsync(),
                 PageIndex = pageIndex,
                 PageSize = pagesize,
                 TotalPages = ((await _context.Set<T>().CountAsync()) + pagesize-1)/pagesize,
@@ -52,26 +52,36 @@ namespace MovieAPI.Repository
 
         public async Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, Func<IQueryable<T>,IIncludableQueryable<T, object>>? includes = null)
         {
-            var items = _context.Set<T>().Where(criteria);
+            var items = _context.Set<T>().AsNoTracking().Where(criteria);
             if (includes != null)
                 items = includes(items);
             return await items.ToListAsync();
         }
-        public async Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
+        public async Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
-            var items = _context.Set<T>().Where(criteria);
+            var items = _context.Set<T>().AsNoTracking().Where(criteria);
             if (includes != null)
                     items = includes(items);
             return await items.Select(selector).ToListAsync();
         }
 
-        public async Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
+        public async Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria,
+            int pageIndex = 1, int pagesize = 10,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null,
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null
+            )
         {
-            var items = _context.Set<T>().Where(criteria);
+            var items = _context.Set<T>().AsNoTracking().Where(criteria);
             var count = ((await items.CountAsync()) + pagesize - 1) / pagesize;
             items=items.Skip(pagesize * (pageIndex - 1)).Take(pagesize);
+            
             if (includes != null)
-                    items = includes(items);
+                items = includes(items);
+            
+            if(orderBy != null)
+                items= orderBy(items);
+
             return new PagenatedResponse<T>
             {
                 Data = await items.ToListAsync(),
@@ -81,17 +91,25 @@ namespace MovieAPI.Repository
             };
         }
 
-        public async Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
+        public async Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, 
+            Expression<Func<T, T2>> selector,
+            int pageIndex = 1, int pagesize = 10,
+            Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null,
+            Func<IQueryable<T2>, IOrderedQueryable<T2>>? orderBy = null)
         {
-            var items = _context.Set<T>().Where(criteria);
+            var items = _context.Set<T>().AsNoTracking().Where(criteria);
             var count = ((await items.CountAsync()) + pagesize - 1) / pagesize;
             items=items.Skip(pagesize * (pageIndex - 1)).Take(pagesize);
             if (includes != null)
                     items = includes(items);
-            await items.Select(selector).ToListAsync();
+            var selecteditems = items.Select(selector);
+            
+            if (orderBy != null)
+                selecteditems = orderBy(selecteditems);
+
             return new PagenatedResponse<T2>
             {
-                Data = await items.Select(selector).ToListAsync(),
+                Data = await selecteditems.ToListAsync(),
                 PageIndex= pageIndex,
                 PageSize= pagesize,
                 TotalPages = count,
@@ -104,7 +122,7 @@ namespace MovieAPI.Repository
         }
         public async Task<T?> FirstAsync(Expression<Func<T, bool>> e, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
-            IQueryable<T> items =  _context.Set<T>();
+            IQueryable<T> items =  _context.Set<T>().AsNoTracking();
             if (includes != null)
             {
                     items = includes(items);
@@ -113,7 +131,7 @@ namespace MovieAPI.Repository
         }
         public async Task<T2?> FirstAsync<T2>(Expression<Func<T2, bool>> e, Expression<Func<T, T2>> s, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null)
         {
-            IQueryable<T> items = _context.Set<T>();
+            IQueryable<T> items = _context.Set<T>().AsNoTracking();
             if (includes != null)
             {
                     items = includes(items);

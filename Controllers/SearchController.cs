@@ -16,6 +16,8 @@ namespace MovieAPI.Controllers
     [ApiController]
     public class SearchController : ControllerBase
     {
+        // TODO : recommendation create top rated movies for genre , actor and total 
+
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly PagenatedMapper _pagenatedMapper;
@@ -27,42 +29,97 @@ namespace MovieAPI.Controllers
         }
 
         [HttpGet(template: "MoviesOfGenre/{genreId}")]
-        public async Task<IActionResult> GetMoviesByGenreAsync(int genreId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetMoviesByGenreAsync(int genreId, 
+            [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10,
+            [FromQuery] string sortBy = "releaseyear", [FromQuery] string sortDirection = "desc")
         {
             if (!(await _unitOfWork.Genres.AnyAsync(x => x.Id == genreId)))
                 return NotFound($"No genre With ID ={genreId}");
-
+            
+            Func<IQueryable<Movie>,IOrderedQueryable<Movie>>? orderBy = 
+                (sortBy.ToLower(),sortDirection.ToLower()) switch
+            {
+                ("releaseyear","asc") => q => q.OrderBy(x => x.year),
+                ("rating", "asc") => q => q.OrderBy(x=>x.Rate),
+                ("releaseyear", "desc") => q => q.OrderByDescending(x => x.year),
+                ("rating", "desc") => q => q.OrderByDescending(x => x.Rate),
+                _ => null
+            } ;
             var movies = await _unitOfWork.Movies.FindPagenatedAsync(x => x.GenreId == genreId,
-                PageIndex,PageSize, q=>q.Include(x=>x.Genre));
+                PageIndex,PageSize, q=>q.Include(x=>x.Genre),orderBy:orderBy);
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
             
             return Ok(response);
         }
+        [HttpGet(template: "MoviesWithTitleStartWith/{title}")]
+        public async Task<IActionResult> GetMoviesWithTitleStartWithAsync(string title,
+            [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10,
+            [FromQuery] string sortBy = "releaseyear", [FromQuery] string sortDirection = "desc")
+        {
+            Func<IQueryable<Movie>, IOrderedQueryable<Movie>>? orderBy =
+                (sortBy.ToLower(), sortDirection.ToLower()) switch
+                {
+                    ("releaseyear", "asc") => q => q.OrderBy(x => x.year),
+                    ("rating", "asc") => q => q.OrderBy(x => x.Rate),
+                    ("releaseyear", "desc") => q => q.OrderByDescending(x => x.year),
+                    ("rating", "desc") => q => q.OrderByDescending(x => x.Rate),
+                    _ => null
+                };
+            var movies = await _unitOfWork.Movies
+                .FindPagenatedAsync(x => x.Title.StartsWith(title),
+                PageIndex, PageSize, q => q.Include(x => x.Genre),orderBy:orderBy);
+            var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
+
+            return Ok(response);
+        }
 
         [HttpGet("MoviesOfActor/{actorId}")]
-        public async Task<IActionResult> GetMoviesOfActor(int actorId, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetMoviesOfActor(int actorId, 
+            [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10,
+            [FromQuery] string sortBy = "releaseyear", [FromQuery] string sortDirection = "desc")
         {
             if (!(await _unitOfWork.Actors.AnyAsync(x=>x.Id==actorId)))
                 return NotFound($"NO Actor With id = {actorId}");
-
+            Func<IQueryable<Movie>, IOrderedQueryable<Movie>>? orderBy =
+                (sortBy.ToLower(), sortDirection.ToLower()) switch
+                {
+                    ("releaseyear", "asc") => q => q.OrderBy(x => x.year),
+                    ("rating", "asc") => q => q.OrderBy(x => x.Rate),
+                    ("releaseyear", "desc") => q => q.OrderByDescending(x => x.year),
+                    ("rating", "desc") => q => q.OrderByDescending(x => x.Rate),
+                    _ => null
+                };
             var movies = await _unitOfWork.MovieActors.
-                FindPagenatedAsync(x => x.ActorId == actorId,
-                x=>x.Movie
-                ,PageIndex, PageSize, q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre));
+                FindPagenatedAsync(x => x.ActorId == actorId
+                ,x=>x.Movie
+                ,PageIndex, PageSize
+                ,q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre)
+                ,orderBy:orderBy);
 
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
 
             return Ok(response);
         }
         [HttpGet("GetMoviesByReleaseyear/{year}")]
-        public async Task<IActionResult> GetMoviesByReleaseyear(int year, [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetMoviesByReleaseyear(int year, 
+            [FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10, 
+            [FromQuery] string sortBy = "rating", [FromQuery] string sortDirection = "desc")
         {
             if (year > DateTime.Now.Year + 5 || year<1900)
             {
                 return BadRequest("Enter valid year");
             }
+            Func<IQueryable<Movie>, IOrderedQueryable<Movie>>? orderBy =
+                (sortBy.ToLower(), sortDirection.ToLower()) switch
+                {
+                    ("releaseyear", "asc") => q => q.OrderBy(x => x.year),
+                    ("rating", "asc") => q => q.OrderBy(x => x.Rate),
+                    ("releaseyear", "desc") => q => q.OrderByDescending(x => x.year),
+                    ("rating", "desc") => q => q.OrderByDescending(x => x.Rate),
+                    _ => null
+                };
             var movies = await _unitOfWork.Movies.FindPagenatedAsync(x => x.year == year, 
-                PageIndex, PageSize, q=>q.Include(x=>x.Genre));
+                PageIndex, PageSize, q=>q.Include(x=>x.Genre), orderBy: orderBy);
             var response = _pagenatedMapper.Map<Movie,ReturnMovieDto>(movies);
             return Ok(response);
         }
@@ -148,22 +205,31 @@ namespace MovieAPI.Controllers
         }
         [HttpGet("MoviesWatchedByUser")]
         [Authorize(Roles ="Admin,User")]
-        public async Task<IActionResult> MoviesWatchedByUser([FromQuery] int PageIndex=1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> MoviesWatchedByUser([FromQuery] int PageIndex=1, [FromQuery] int PageSize = 10
+                    ,[FromQuery] string sortBy = "releaseyear", [FromQuery] string sortDirection = "desc")
         {
-            if(!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out int userId))
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out int userId))
             {
                 return Unauthorized();
             }
+            Func<IQueryable<Movie>, IOrderedQueryable<Movie>>? orderBy =
+                (sortBy.ToLower(), sortDirection.ToLower()) switch
+                {
+                    ("releaseyear", "asc") => q => q.OrderBy(x => x.year),
+                    ("rating", "asc") => q => q.OrderBy(x => x.Rate),
+                    ("releaseyear", "desc") => q => q.OrderByDescending(x => x.year),
+                    ("rating", "desc") => q => q.OrderByDescending(x => x.Rate),
+                    _ => null
+                };
             var movies = await _unitOfWork.UserMovies
                 .FindPagenatedAsync(x => x.UserId==userId,x=>x.Movie,
                 PageIndex,PageSize,
-                q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre));
+                q=>q.Include(x=>x.Movie).ThenInclude(x=>x.Genre),orderBy:orderBy);
 
             var response = _pagenatedMapper.Map<Movie, ReturnMovieDto>(movies);
             
             return Ok(response);
         }
-        // TODO : Search in all files and use select to optimize performance
 
     }
 }

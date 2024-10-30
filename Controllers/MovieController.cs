@@ -18,8 +18,6 @@ namespace MovieAPI.Controllers
     [ApiController]
     public class MovieController : ControllerBase
     {
-        //private readonly IRepository<Movie> _unitOfWork.Movies;
-        //private readonly IRepository<Genre> _unitOfWork.Genres;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IMapper _mapper;
         private readonly PagenatedMapper _pagenatedMapper;
@@ -59,7 +57,6 @@ namespace MovieAPI.Controllers
         public async Task<IActionResult> AddMovieAsync([FromForm] AddMovieDto dto)
         {
             //_dbContext.Database.ExecuteSqlRaw("DBCC CHECKIDENT('Movies', RESEED, 0)");
-
 
             if (dto.Poster.Length > _attachOptions.Value.MaxSizeInMegaByte * 1024 * 1024)
                 return BadRequest($"Max allowd Length is For poster is {_attachOptions.Value.MaxSizeInMegaByte}MB");
@@ -107,7 +104,7 @@ namespace MovieAPI.Controllers
         [Authorize(Roles ="Admin")]
         public async Task<IActionResult> UpdateMovieAsync(int id, [FromForm] UpdateMovieDto dto)
         {
-            var movie = await _unitOfWork.Movies.GetByIdAsync(id);
+            var movie = await _unitOfWork.Movies.FirstAsync(x=>x.Id==id,q=>q.Include(x=>x.Genre));
             if (movie is null) return NotFound($"No Movie With ID={id}");
 
             if (dto.GenreId.HasValue && !(await _unitOfWork.Genres.AnyAsync(x => x.Id == dto.GenreId)))

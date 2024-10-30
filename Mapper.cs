@@ -21,7 +21,9 @@ namespace MovieAPI
                 .ForMember(x=>x.GenreId,op=>op.MapFrom((x,y)=>x.GenreId.HasValue?x.GenreId:y.GenreId))
                 .ForMember(x=>x.StoreLine,op=>op.MapFrom((x,y)=>string.IsNullOrEmpty(x.StoreLine)?y.StoreLine:x.StoreLine))
                 .ForMember(x=>x.Title,op=>op.MapFrom((x,y)=>string.IsNullOrEmpty(x.Title)?y.Title:x.Title))
-                .ForMember(x=>x.year,op=>op.MapFrom((x,y)=>x.year.HasValue?x.year:y.year));
+                .ForMember(x=>x.year,op=>op.MapFrom((x,y)=>x.year.HasValue?x.year:y.year))
+                .ForMember(x => x.Link, op => op.MapFrom((x, y) => string.IsNullOrEmpty(x.Link) ? y.Link : x.Link))
+                ;
             CreateMap<Movie, ReturnMovieDto>();
 
             /// 

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using MovieAPI;
 
@@ -11,9 +12,11 @@ using MovieAPI;
 namespace MovieAPI.Migrations
 {
     [DbContext(typeof(AppDBContext))]
-    partial class AppDBContextModelSnapshot : ModelSnapshot
+    [Migration("20241027224756_addLinkPropToMovieTable")]
+    partial class addLinkPropToMovieTable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,11 +125,6 @@ namespace MovieAPI.Migrations
                     b.Property<byte[]>("Poster")
                         .IsRequired()
                         .HasColumnType("varbinary(max)");
-
-                    b.Property<double>("Rate")
-                        .ValueGeneratedOnAddOrUpdate()
-                        .HasColumnType("float")
-                        .HasComputedColumnSql("CASE WHEN [NoOfReview] = 0 THEN 0 ELSE [SumOfReview] / [NoOfReview] END");
 
                     b.Property<string>("StoreLine")
                         .IsRequired()

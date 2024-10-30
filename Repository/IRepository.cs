@@ -10,9 +10,9 @@ namespace MovieAPI.Repository
         Task<PagenatedResponse<T>> GetAllAsync(int pageIndex = 1, int pagesize = 10);
         Task<T?> GetByIdAsync(int? id);
         Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> criteria, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
-        Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria,int pageIndex=1,int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<PagenatedResponse<T>> FindPagenatedAsync(Expression<Func<T, bool>> criteria,int pageIndex=1,int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null, Func<IQueryable<T>, IOrderedQueryable<T>>? orderBy = null);
         Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
-        Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null);
+        Task<PagenatedResponse<T2>> FindPagenatedAsync<T2>(Expression<Func<T, bool>> criteria, Expression<Func<T, T2>> selector, int pageIndex = 1, int pagesize = 10, Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null, Func<IQueryable<T2>, IOrderedQueryable<T2>>? orderBy = null);
 
         //        Task<IEnumerable<T>> FindAsync(Expression<Func<T, bool>> e, string[]? includes = null);
         //      Task<IEnumerable<T2>> FindAsync<T2>(Expression<Func<T, bool>> e, Expression<Func<T, T2>> s, string[]? includes = null);

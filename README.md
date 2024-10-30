@@ -141,18 +141,18 @@ This API uses **JWT (JSON Web Tokens)** for authentication and authorization. Us
 
 ### Search
 
-| Method | Endpoint                                 | Description                                       |
-|--------|------------------------------------------|---------------------------------------------------|
-| GET    | /api/Search/MoviesOfGenre/{genreId}      | Retrieve movies of a specific genre               |
-| GET    | /api/Search/MoviesOfActor/{actorId}      | Retrieve movies featuring a specific actor        |
-| GET    | /api/Search/GetMoviesByReleaseyear/{year}| Retrieve movies released in a specific year       |
-| GET    | /api/Search/ReviewsOfMovie/{movieId}     | Retrieve reviews for a specific movie             |
-| GET    | /api/Search/ActorsOfMovie/{movieId}      | Retrieve actors of a specific movie               |
-| GET    | /api/Search/AwardsOfActor/{actorId}      | Retrieve awards won by a specific actor           |
-| GET    | /api/Search/ActorsGotAward/{awardId}     | Retrieve actors who received a specific award     |
-| GET    | /api/Search/ReviewsofUser                | Retrieve reviews by the authenticated user        |
-| GET    | /api/Search/MoviesWatchedByUser          | Retrieve movies watched by the authenticated user |
-
+| Method | Endpoint                                     | Description                                             |
+|--------|----------------------------------------------|---------------------------------------------------------|
+| GET    | /api/Search/MoviesOfGenre/{genreId}          | Retrieve movies of a specific genre                     |
+| GET    | /api/Search/MoviesOfActor/{actorId}          | Retrieve movies featuring a specific actor              |
+| GET    | /api/Search/GetMoviesByReleaseyear/{year}    | Retrieve movies released in a specific year             |
+| GET    | /api/Search/ReviewsOfMovie/{movieId}         | Retrieve reviews for a specific movie                   |
+| GET    | /api/Search/ActorsOfMovie/{movieId}          | Retrieve actors of a specific movie                     |
+| GET    | /api/Search/AwardsOfActor/{actorId}          | Retrieve awards won by a specific actor                 |
+| GET    | /api/Search/ActorsGotAward/{awardId}         | Retrieve actors who received a specific award           |
+| GET    | /api/Search/ReviewsofUser                    | Retrieve reviews by the authenticated user              |
+| GET    | /api/Search/MoviesWatchedByUser              | Retrieve movies watched by the authenticated user       |
+| Get    | /api/Search/MoviesWithTitleStartWith/{title} | Retrieve movies whose titles start with specific string |
 ### Recommendation
 
 | Method | Endpoint                                          | Description                                                   |
@@ -160,6 +160,11 @@ This API uses **JWT (JSON Web Tokens)** for authentication and authorization. Us
 | GET    | /api/Recommendation/RecommendedMoviesBasedOnGenre | Retrieve recommended movies based on user’s genre preferences |
 | GET    | /api/Recommendation/RecommendedMoviesBasedOnActor | Retrieve recommended movies based on user’s favorite actors   |
 
+## Pagination and Ordering
+Endpoints support pagination and ordering of results.
+Use the query parameters pageIndex and pageSize to control the number of results returned per page.
+Additionally, the sortBy parameter allows users to specify the attribute (rating or releaseyear) by which to sort the results,
+while sortDirection can be set to either "asc" for ascending or "desc" for descending order.
 
 ## Repository Pattern
 

@@ -46,7 +46,7 @@ namespace MovieAPI.Controllers
         }
 
         [HttpPost("AddActor")]
-        public async Task<IActionResult> AddActor([FromForm]AddActorDto dto)
+        public async Task<IActionResult> AddActor([FromBody]AddActorDto dto)
         {
 
             var IncorrectId = await CheckAwardsAsync(dto.Awards);
@@ -72,7 +72,7 @@ namespace MovieAPI.Controllers
         }
 
         [HttpPut("UpdateActor/{id}")]
-        public async Task<IActionResult> UpdateActor(int id, [FromForm] UpdateActorDto dto)
+        public async Task<IActionResult> UpdateActor(int id, [FromBody] UpdateActorDto dto)
         {
             var actor = await _unitOfWork.Actors.GetByIdAsync(id);
             if (actor is null) return NotFound($"NO Actor With id={id}");
@@ -94,6 +94,7 @@ namespace MovieAPI.Controllers
             _unitOfWork.SaveChanges();
             return Ok(_mapper.Map<Actor, ReturnActorDto>(actor));
         }
+        
         private async Task<(int,int)> CheckAwardsAsync(List<ActorAwardsDto>?awards)
         {
             if (awards is null || !awards.Any()) return (0, 0);

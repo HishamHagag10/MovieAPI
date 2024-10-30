@@ -5,6 +5,7 @@ using MovieAPI.Helper;
 using MovieAPI.models;
 using NetTopologySuite.Index.HPRtree;
 using NetTopologySuite.Noding;
+using System.Linq.Expressions;
 
 namespace MovieAPI.Repository
 {
@@ -45,8 +46,8 @@ namespace MovieAPI.Repository
             var actors = await _context.UserMovies
                 .Where(x => x.UserId == userId)
                 .SelectMany(x=>x.Movie.Actors)
-                .GroupBy(x => x.Id).
-                OrderByDescending(x => x.Count())
+                .GroupBy(x => x.Id)
+                .OrderByDescending(x => x.Count())
                 .Select(x => x.Key)
                 .Take(10)
                 .ToListAsync();
@@ -69,6 +70,5 @@ namespace MovieAPI.Repository
             };
             return response;
         }
-
     }
 }

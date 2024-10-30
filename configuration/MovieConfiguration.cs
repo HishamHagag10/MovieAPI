@@ -16,6 +16,7 @@ namespace MovieAPI.configuration
                 .OnDelete(DeleteBehavior.Restrict);
             builder.Property(p =>p.Title).IsRequired().HasMaxLength(250);
             builder.Property(p=>p.StoreLine).HasMaxLength(2500);
+            builder.Property(p => p.Rate).HasComputedColumnSql("CASE WHEN [NoOfReview] = 0 THEN 0 ELSE [SumOfReview] / [NoOfReview] END");
         }
     }
 }
