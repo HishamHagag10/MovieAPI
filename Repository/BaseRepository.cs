@@ -95,18 +95,22 @@ namespace MovieAPI.Repository
             Expression<Func<T, T2>> selector,
             int pageIndex = 1, int pagesize = 10,
             Func<IQueryable<T>, IIncludableQueryable<T, object>>? includes = null,
-            Func<IQueryable<T2>, IOrderedQueryable<T2>>? orderBy = null)
+            Func<IQueryable<T>, IOrderedQueryable<T>>? orderBeforeBy = null,
+            Func<IQueryable<T2>, IOrderedQueryable<T2>>? orderAfterBy = null
+            )
         {
             var items = _context.Set<T>().AsNoTracking().Where(criteria);
             var count = ((await items.CountAsync()) + pagesize - 1) / pagesize;
             items=items.Skip(pagesize * (pageIndex - 1)).Take(pagesize);
             if (includes != null)
                     items = includes(items);
+            if (orderBeforeBy != null)
+                items = orderBeforeBy(items);
             var selecteditems = items.Select(selector);
             
-            if (orderBy != null)
-                selecteditems = orderBy(selecteditems);
-
+            if (orderAfterBy != null)
+                selecteditems = orderAfterBy(selecteditems);
+            
             return new PagenatedResponse<T2>
             {
                 Data = await selecteditems.ToListAsync(),
