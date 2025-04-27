@@ -1,113 +1,81 @@
-﻿using AutoMapper;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.IdentityModel.Tokens;
-using MovieAPI.Authentication;
-using MovieAPI.Dtos;
-using MovieAPI.models;
-using MovieAPI.Repository;
-using System.IdentityModel.Tokens.Jwt;
-using System.Security.Claims;
-using System.Text;
-
-namespace MovieAPI.Controllers
+﻿namespace MovieAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class UserController : ControllerBase
     {
-        private readonly IUnitOfWork _unitOfWork;
-        private readonly IMapper _mapper;
-        private readonly JwtOptions _jwtOptions;
+        private readonly ISender _sender;
 
-        public UserController(IUnitOfWork unitOfWork, IMapper mapper,JwtOptions jwtOptions)
+        public UserController(ISender sender)
         {
-            _unitOfWork = unitOfWork;
-            _mapper = mapper;
-            _jwtOptions = jwtOptions;
+            _sender = sender;
         }
+
         [AllowAnonymous]
-        [HttpGet("AuthenticateUser")]
-        public async Task<IActionResult> AuthenticateUser(LoggingModel model)
+        [HttpPost]
+        [Route("Login")]
+        public async Task<IActionResult> AuthenticateUser(AuthenticateUserCommand request)
         {
-            if (string.IsNullOrEmpty(model.UserName) || string.IsNullOrEmpty(model.Password))
+            var response = await _sender.Send(request);
+            if (response.IsSuccess)
             {
-                return Unauthorized("Enter UserName And Password");
+                return Ok(response.Data);
             }
-            var user = await _unitOfWork.Users.FirstAsync(x=>x.UserName==model.UserName 
-            && x.Password==model.Password);
-            if (user == null)
+            return Unauthorized(Helpers.ErrorResponse(401, response.ErrorMessage));
+        }
+
+        [HttpPost("Register")]
+        [AllowAnonymous]
+        public async Task<IActionResult> RegisterUser([FromForm] RegisterUserCommand request)
+        {
+            var response = await _sender.Send(request);
+            if (response.IsSuccess)
             {
-                return Unauthorized("Wrong UserName Or Password");
-            }
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var tokenDescriptor = new SecurityTokenDescriptor
-            {
-                Issuer = _jwtOptions.Issuer,
-                Audience = _jwtOptions.Audience,
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(
-                    Encoding.UTF8.GetBytes(_jwtOptions.SigningKey)),
-                    SecurityAlgorithms.HmacSha256),
-                Subject = new ClaimsIdentity(new Claim[]
+                return await AuthenticateUser(new AuthenticateUserCommand
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new(ClaimTypes.Name, user.Name),
-                    new(ClaimTypes.Role,user.Role.ToString())
-                })
-            };
-            var securityToken = tokenHandler.CreateToken(tokenDescriptor);
-            var accessToken = tokenHandler.WriteToken(securityToken);
-
-            return Ok(accessToken);
-        }
-        
-        [HttpPost("RegisterUser/")]
-        [AllowAnonymous]
-        public async Task<IActionResult> RegisterUser([FromForm] AddUserDto dto)
-        {
-            if (await _unitOfWork.Users.AnyAsync(x => x.UserName == dto.UserName))
-                return BadRequest("Change UserName");
-            var user = _mapper.Map<AddUserDto,User>(dto);
-            user.Role = Role.User;
-            user = await _unitOfWork.Users.AddAsync(user);
-            _unitOfWork.SaveChanges();
-            return await AuthenticateUser(new LoggingModel { UserName=user.UserName,Password=user.Password});
+                    UserName = request.UserName,
+                    Password = request.Password
+                });
+            }
+            return Unauthorized(Helpers.ErrorResponse(401, response.ErrorMessage));
         }
 
-        [HttpDelete("DeleteUser")]
+        [HttpDelete("Delete")]
         [Authorize(Roles = "User,Admin")]
         public async Task<IActionResult> DeleteUser()
-        {
-            if(!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value,out int id))
-            {
-                return Unauthorized();
-            }
-            var user = await _unitOfWork.Users.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            _unitOfWork.Users.Delete(user);
-            _unitOfWork.SaveChanges();
-            return Ok("Deleted Successfully");
-        }
-
-        [HttpPut("UpdateUser")]
-        [Authorize(Roles = "User,Admin")]
-        public async Task<IActionResult> UpdateUser(UpdateUserDto dto)
         {
             if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id))
             {
                 return Unauthorized();
             }
+            DeleteUserCommand request = new DeleteUserCommand
+            {
+                Id = id
+            };
+            var response = await _sender.Send(request);
+            if (response.IsSuccess)
+            {
+                return Ok();
+            }
+            return Unauthorized(Helpers.ErrorResponse(401, response.ErrorMessage));
+        }
 
-            var user = await _unitOfWork.Users.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            
-            if(dto.Name != null)user.Name = dto.Name;
-            if(dto.Email != null)user.Email = dto.Email;
-            
-            _unitOfWork.Users.Update(user);
-            _unitOfWork.SaveChanges();
-            return Ok("Updated Successfully");
+        [HttpPut("Update")]
+        [Authorize(Roles = "User,Admin")]
+        public async Task<IActionResult> UpdateUser(UpdateUserCommand request)
+        {
+            if (!int.TryParse(User.FindFirst(ClaimTypes.NameIdentifier)?.Value, out int id))
+            {
+                return Unauthorized();
+            }
+            request.Id = id;
+            var response = await _sender.Send(request);
+            if (response.IsSuccess)
+            {
+                return Ok();
+            }
+            return Unauthorized(Helpers.ErrorResponse(401, response.ErrorMessage));
+
         }
 
     }

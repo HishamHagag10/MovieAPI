@@ -1,99 +1,75 @@
-﻿using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using MovieAPI.Dtos;
-using MovieAPI.Helper;
-using MovieAPI.models;
-using MovieAPI.Repository;
-
+﻿
 namespace MovieAPI.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    [Authorize(Roles = "Admin")]
+    //[Authorize(Roles = "Admin")]
     public class GenreController : ControllerBase
     {
-        //private readonly IRepository<Movie> _movieRepository;
-        //private readonly IRepository<Genre> _unitOfWork.Genres;
-        private readonly IUnitOfWork _unitOfWork;
 
-        public GenreController(IUnitOfWork unitOfWork)
+        private readonly ISender _sender;
+
+        public GenreController(ISender sender)
         {
-            this._unitOfWork = unitOfWork;
+            _sender = sender;
         }
-
-        /*public GenreController(IRepository<Genre> repository, IRepository<Movie> movieRepository)
-        {
-            this._unitOfWork.Genres = repository;
-            _movieRepository = movieRepository;
-        }*/
 
         [HttpGet]
-        [Route("GetAllGenres")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetAllAsync([FromQuery] int PageIndex = 1, [FromQuery] int PageSize = 10)
+        public async Task<IActionResult> GetGenersAsync([FromQuery]GetGenresQuery request)
         {
-            var genres = await _unitOfWork.Genres.GetAllAsync(PageIndex,PageSize);
-            var response = new PagenatedResponse<string>
+            var response = await _sender.Send(request);
+            if (!response.IsSuccess)
             {
-                Data = genres.Data.Select(x => x.Name),
-                PageIndex = PageIndex,
-                PageSize = PageSize,
-                TotalPages = genres.TotalPages,
-            };
-            return Ok(genres);
+                return NotFound(Helpers.ErrorResponse(404,response.ErrorMessage));
+            }
+            return Ok(response.Data);
         }
-        [HttpGet("GetGenre/{id}")]
+        [HttpGet("Get/{Id}")]
         [AllowAnonymous]
-        public async Task<IActionResult> GetByIdAsync(int id)
+        public async Task<IActionResult> GetByIdAsync([FromRoute] GetGenreByIdQuery request)
         {
-            var genre = await _unitOfWork.Genres.GetByIdAsync(id);
-            if(genre == null) return NotFound($"No Genre With Id {id}"); 
-            return Ok(genre);
+            var response = await _sender.Send(request);
+            if (!response.IsSuccess)
+            {
+                return NotFound(Helpers.ErrorResponse(404,response.ErrorMessage));
+            }
+            return Ok(response.Data);
         }
 
         [HttpPost]
-        [Route("AddNewGenre")]
-        public async Task<IActionResult> AddGenre(AddGenreDto genreDto)
+        [Route("Add")]
+        public async Task<IActionResult> AddGenre(AddGenreCommand request)
         {
-            var genre = new Genre { Name = genreDto.Name };
-            genre = await _unitOfWork.Genres.AddAsync(genre);
-            _unitOfWork.SaveChanges();
-            return Ok(genre);
+            var response = await _sender.Send(request);
+            if(!response.IsSuccess)
+                return BadRequest(Helpers.ErrorResponse(404, response.ErrorMessage));
+
+            return Ok(response.Data);
         }
 
-        [HttpPut(template:"UpdateGenre/{id}")]
-        public async Task<IActionResult> UpdateGenre(int id,[FromBody]AddGenreDto dto)
+        [HttpPut(template: "Update/{id}")]
+        public async Task<IActionResult> UpdateGenre(int id, [FromBody] UpdateGenreCommand request)
         {
-            var genre = await _unitOfWork.Genres.GetByIdAsync(id);
-            if(genre is null)
+            request.Id= id;
+            var response = await _sender.Send(request);
+            if (!response.IsSuccess)
             {
-                return NotFound($"No Genre With ID = {id}");
+                return StatusCode(response.StatusCode,Helpers.ErrorResponse(response.StatusCode,response.ErrorMessage));
             }
-            genre.Name = dto.Name;
-            genre = _unitOfWork.Genres.Update(genre);
-            _unitOfWork.SaveChanges();
-            return Ok(genre);
+            return Ok(response.Data);
         }
 
 
-        [HttpDelete(template:"DeleteGenre/{id}")]
-        public async Task<IActionResult> DeleteAsync(int id)
+        [HttpDelete(template: "Delete/{Id}")]
+        public async Task<IActionResult> DeleteAsync([FromRoute] DeleteGenreCommand request)
         {
-            var genre = await _unitOfWork.Genres.GetByIdAsync(id); 
-            if(genre is null)
-            {
-                return NotFound($"No Genre With ID = {id}");
-            }
-            if (await _unitOfWork.Movies.AnyAsync(x=>x.GenreId==id))
-            {
-                return BadRequest($"Delete Movies with genre Id = {id} Before Delete it!");
-            }
-            genre = _unitOfWork.Genres.Delete(genre);
-            _unitOfWork.SaveChanges();
-            return Ok(genre);
+            var response = await _sender.Send(request);
+            if(!response.IsSuccess)
+                return NotFound(Helpers.
+                    ErrorResponse(response.StatusCode,
+                    response.ErrorMessage));
+            return Ok(response.Data);
         }
     }
 }

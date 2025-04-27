@@ -1,5 +1,4 @@
-﻿using AutoMapper;
-
+﻿
 namespace MovieAPI.Helper
 {
     public class PagenatedMapper
@@ -10,16 +9,17 @@ namespace MovieAPI.Helper
         {
             _mapper = mapper;
         }
-        public PagenatedResponse<T2> Map<T1,T2>(PagenatedResponse<T1>r)
+        public PagenatedResponse<T2> Map<T1,T2>(ICollection<T1> data,int pageIndex,int pageSize,int totalCount)
         {
-            var re = new PagenatedResponse<T2>
+            var pr = new PagenatedResponse<T2>
             {
-                Data = _mapper.Map<IEnumerable<T1>, IEnumerable<T2>>(r.Data),
-                PageIndex = r.PageIndex,
-                PageSize = r.PageSize,
-                TotalPages = r.TotalPages,
+                Data = _mapper.Map<IEnumerable<T1>, IEnumerable<T2>>(data),
+                PageIndex = pageIndex,
+                PageSize = pageSize,
+                TotalCount=totalCount,
+                TotalPages = (totalCount+pageSize-1)/pageSize,
             };
-            return re;
+            return pr;
         }
     }
 }

@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
-using MovieAPI;
+using MovieAPI.AppDbContext;
 
 #nullable disable
 
@@ -48,7 +48,7 @@ namespace MovieAPI.Migrations
                     b.ToTable("Actors", (string)null);
                 });
 
-            modelBuilder.Entity("MovieAPI.models.ActorAwards", b =>
+            modelBuilder.Entity("MovieAPI.models.ActorAward", b =>
                 {
                     b.Property<int>("ActorId")
                         .HasColumnType("int");
@@ -92,7 +92,6 @@ namespace MovieAPI.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
@@ -201,6 +200,9 @@ namespace MovieAPI.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2");
+
                     b.Property<string>("Description")
                         .HasColumnType("nvarchar(max)");
 
@@ -209,6 +211,9 @@ namespace MovieAPI.Migrations
 
                     b.Property<double>("Rate")
                         .HasColumnType("float");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<int>("UserId")
                         .HasColumnType("int");
@@ -266,7 +271,7 @@ namespace MovieAPI.Migrations
                     b.ToTable("Users", (string)null);
                 });
 
-            modelBuilder.Entity("MovieAPI.models.ActorAwards", b =>
+            modelBuilder.Entity("MovieAPI.models.ActorAward", b =>
                 {
                     b.HasOne("MovieAPI.models.Actor", "Actor")
                         .WithMany()
@@ -288,7 +293,7 @@ namespace MovieAPI.Migrations
             modelBuilder.Entity("MovieAPI.models.Movie", b =>
                 {
                     b.HasOne("MovieAPI.models.Genre", "Genre")
-                        .WithMany()
+                        .WithMany("Movies")
                         .HasForeignKey("GenreId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -351,6 +356,11 @@ namespace MovieAPI.Migrations
                     b.Navigation("Movie");
 
                     b.Navigation("User");
+                });
+
+            modelBuilder.Entity("MovieAPI.models.Genre", b =>
+                {
+                    b.Navigation("Movies");
                 });
 
             modelBuilder.Entity("MovieAPI.models.Movie", b =>

@@ -1,15 +1,4 @@
 
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Migrations;
-using Microsoft.IdentityModel.Tokens;
-using MovieAPI.Authentication;
-using MovieAPI.Helper;
-using MovieAPI.Meddlewares;
-using MovieAPI.models;
-using MovieAPI.Repository;
-using System.Text;
-
 namespace MovieAPI
 {
     public class Program
@@ -18,7 +7,7 @@ namespace MovieAPI
         {
             var builder = WebApplication.CreateBuilder(args);
 
-            builder.Services.AddDbContext<AppDBContext>();
+            //builder.Services.AddDbContext<AppDBContext>();
             // Add services to the container.
 
             builder.Services.AddControllers();
@@ -26,7 +15,14 @@ namespace MovieAPI
             builder.Services.AddEndpointsApiExplorer();
             builder.Services.AddSwaggerGen();
 
-            var jwtOption = builder.Configuration.GetSection("Jwt").Get<JwtOptions>();
+            builder.Services.AddMediatR(config =>
+            {
+                config.RegisterServicesFromAssembly(typeof(Program).Assembly);
+
+            });
+
+
+            JwtOptions jwtOption = builder.Configuration.GetSection("Jwt").Get<JwtOptions>()!;
             builder.Services.AddAuthentication()
                 .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
                 {
@@ -44,18 +40,26 @@ namespace MovieAPI
                 });
             builder.Services.AddSingleton(jwtOption);
             
-            //builder.Configuration.AddJsonFile("Path");
-            builder.Services.Configure<AttachmentOption>(builder.Configuration.GetSection("Attachments"));
+            builder.Services.Configure<AttachmentOption>(builder.
+                Configuration.GetSection("Attachments"));
 
-
-            //builder.Services.AddTransient<IRepository<Genre>, BaseRepository<Genre>>();
-            //builder.Services.AddTransient<IRepository<Movie>, BaseRepository<Movie>>();
-            builder.Services.AddTransient<IUnitOfWork,UnitOfWork>();
+            builder.Services.AddTransient<IUnitOfWork, UnitOfWork>();
+            builder.Services.AddTransient<AppDBContext>();
             builder.Services.AddScoped<PagenatedMapper>();
+            builder.Services.AddScoped<ActorRepo>();
+            builder.Services.AddScoped<AwardRepo>();
+            builder.Services.AddScoped<GenreRepo>();
+            builder.Services.AddScoped<MovieRepo>();
+            builder.Services.AddScoped<ReviewRepo>();
+            builder.Services.AddScoped<MovieActorsRepo>();
+            builder.Services.AddScoped<ActorAwardRepo>();
+            builder.Services.AddScoped<UserRepo>();
+            builder.Services.AddScoped<UserMovieRepo>();
+            builder.Services.AddScoped<RecommendationRepo>();
+
+
             builder.Services.AddAutoMapper(typeof(Program));
             
-            
-
             var app = builder.Build();
 
             // Configure the HTTP request pipeline.
@@ -64,14 +68,14 @@ namespace MovieAPI
                 app.UseSwagger();
                 app.UseSwaggerUI();
             }
-            app.UseMiddleware<ExceptionMeddleware>();
 
+            
             app.UseMiddleware<RateLimitingMiddleware>();
+            app.UseMiddleware<ExceptionMiddleware>();
             
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
             app.MapControllers();
 
             app.Run();

@@ -1,6 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
+﻿
 namespace MovieAPI.models
 {
     public class Movie
@@ -13,7 +11,6 @@ namespace MovieAPI.models
 
         [DatabaseGenerated(DatabaseGeneratedOption.Computed)]
         public double Rate { set; get; }
-         
         public string StoreLine { get; set; }
         public byte[] Poster { get; set; }
         public string Link { get; set; }
